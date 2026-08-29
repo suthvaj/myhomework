@@ -208,6 +208,14 @@
   .badge-normal{background:var(--info-bg);color:var(--accent-2);}
   .badge-done{background:var(--success-bg);color:var(--success);}
 
+  .badge-group{background:var(--info-bg);color:var(--accent);}
+  .member-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+  .member-chip{
+    display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;
+    background:rgba(94,92,230,0.1);color:var(--accent);font-size:11.5px;font-weight:500;
+  }
+  [data-theme="dark"] .member-chip{background:rgba(94,92,230,0.18);}
+
   /* ---------- forms ---------- */
   .form-card{padding:26px 28px;}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;}
@@ -225,6 +233,7 @@
   .field input:focus, .field select:focus, .field textarea:focus{
     outline:none;border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(10,132,255,0.18);
   }
+  .field.hidden{display:none;}
   .field textarea{resize:vertical;min-height:88px;}
   .form-actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap;}
 
@@ -505,6 +514,17 @@
             <input type="text" id="f-teacher" placeholder="ชื่อครูผู้สอน">
           </div>
           <div class="field">
+            <label for="f-taskType">ประเภทงาน</label>
+            <select id="f-taskType">
+              <option value="เดี่ยว" selected>👤 งานเดี่ยว</option>
+              <option value="กลุ่ม">👥 งานกลุ่ม</option>
+            </select>
+          </div>
+          <div class="field full hidden" id="group-members-field">
+            <label for="f-groupMembers">รายชื่อสมาชิกในกลุ่ม (คั่นด้วยเครื่องหมายจุลภาค ,)</label>
+            <input type="text" id="f-groupMembers" placeholder="เช่น สมชาย ใจดี, สมหญิง รักเรียน, กิตติ ขยันเรียน">
+          </div>
+          <div class="field">
             <label for="f-priority">ความสำคัญ</label>
             <select id="f-priority">
               <option value="สูง">🔴 สูง</option>
@@ -663,6 +683,7 @@
     'eraser':'<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
     'search':'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
     'user':'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     'calendar':'<rect x="3" y="4.5" width="18" height="16" rx="2"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/>',
     'calendar-clock':'<path d="M8 2.5v3M3 10h11M21 12v-3.5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h5.5"/><path d="M16 2.5v3"/><circle cx="17" cy="17" r="4.5"/><path d="M17 15.3v1.7l1.1.8"/>',
     'pencil':'<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/>',
@@ -727,6 +748,8 @@
       dueDate: data.dueDate,
       dueTime: data.dueTime || '23:59',
       teacher: data.teacher || '',
+      taskType: data.taskType || 'เดี่ยว',
+      groupMembers: data.taskType === 'กลุ่ม' ? (data.groupMembers || '') : '',
       priority: data.priority,
       status: data.status,
       createdAt: Date.now()
@@ -766,13 +789,13 @@
     var today = new Date();
     var base = Date.now() - 100000;
     var raw = [
-      { subject:'คณิตศาสตร์', description:'แบบฝึกหัดสมการเชิงเส้นตัวแปรเดียว บทที่ 5 ข้อ 1-20 พร้อมแสดงวิธีทำ', assignedOffset:-2, dueOffset:1, dueTime:'15:30', teacher:'ครูสมชาย ใจดี', priority:'สูง', status:'ยังไม่เริ่ม' },
-      { subject:'ภาษาไทย', description:'เขียนเรียงความหัวข้อ "การอนุรักษ์สิ่งแวดล้อม" ความยาวไม่ต่ำกว่า 2 หน้ากระดาษ', assignedOffset:-3, dueOffset:3, dueTime:'23:59', teacher:'ครูวรรณา สายใจ', priority:'ปานกลาง', status:'กำลังทำ' },
-      { subject:'วิทยาศาสตร์', description:'สรุปรายงานผลการทดลองเรื่องการสังเคราะห์แสง พร้อมวาดแผนภาพประกอบ', assignedOffset:-1, dueOffset:5, dueTime:'12:00', teacher:'ครูสมหญิง พงษ์ไพร', priority:'ต่ำ', status:'ยังไม่เริ่ม' },
-      { subject:'ภาษาอังกฤษ', description:'ทำแบบฝึกหัด Unit 4: Present Perfect Tense หน้า 45-46 ให้ครบทุกข้อ', assignedOffset:-5, dueOffset:-1, dueTime:'08:00', teacher:'ครูจอห์น มิลเลอร์', priority:'สูง', status:'กำลังทำ' },
-      { subject:'สังคมศึกษา', description:'จัดทำสไลด์นำเสนองานกลุ่ม หัวข้อประวัติศาสตร์อาเซียน 10 หน้า', assignedOffset:-6, dueOffset:0, dueTime:'09:00', teacher:'ครูสมศรี บุญมา', priority:'ปานกลาง', status:'เสร็จแล้ว' },
-      { subject:'คอมพิวเตอร์', description:'เขียนโค้ด HTML และ CSS สร้างเว็บไซต์ส่วนตัวอย่างง่าย', assignedOffset:-10, dueOffset:7, dueTime:'16:00', teacher:'ครูอนันต์ ชัยวัฒน์', priority:'ต่ำ', status:'เสร็จแล้ว' },
-      { subject:'ศิลปะ', description:'วาดภาพระบายสีน้ำ หัวข้อธรรมชาติรอบตัว ขนาด A3', assignedOffset:-1, dueOffset:0, dueTime:'23:00', teacher:'ครูปราณี ศิลปิน', priority:'สูง', status:'ยังไม่เริ่ม' }
+      { subject:'คณิตศาสตร์', description:'แบบฝึกหัดสมการเชิงเส้นตัวแปรเดียว บทที่ 5 ข้อ 1-20 พร้อมแสดงวิธีทำ', assignedOffset:-2, dueOffset:1, dueTime:'15:30', teacher:'ครูสมชาย ใจดี', taskType:'เดี่ยว', groupMembers:'', priority:'สูง', status:'ยังไม่เริ่ม' },
+      { subject:'ภาษาไทย', description:'เขียนเรียงความหัวข้อ "การอนุรักษ์สิ่งแวดล้อม" ความยาวไม่ต่ำกว่า 2 หน้ากระดาษ', assignedOffset:-3, dueOffset:3, dueTime:'23:59', teacher:'ครูวรรณา สายใจ', taskType:'เดี่ยว', groupMembers:'', priority:'ปานกลาง', status:'กำลังทำ' },
+      { subject:'วิทยาศาสตร์', description:'สรุปรายงานผลการทดลองเรื่องการสังเคราะห์แสง พร้อมวาดแผนภาพประกอบ', assignedOffset:-1, dueOffset:5, dueTime:'12:00', teacher:'ครูสมหญิง พงษ์ไพร', taskType:'กลุ่ม', groupMembers:'พิมพ์ชนก แสงทอง, ธนกร วงศ์ใหญ่, ณัฐชา ปัญญาดี', priority:'ต่ำ', status:'ยังไม่เริ่ม' },
+      { subject:'ภาษาอังกฤษ', description:'ทำแบบฝึกหัด Unit 4: Present Perfect Tense หน้า 45-46 ให้ครบทุกข้อ', assignedOffset:-5, dueOffset:-1, dueTime:'08:00', teacher:'ครูจอห์น มิลเลอร์', taskType:'เดี่ยว', groupMembers:'', priority:'สูง', status:'กำลังทำ' },
+      { subject:'สังคมศึกษา', description:'จัดทำสไลด์นำเสนองานกลุ่ม หัวข้อประวัติศาสตร์อาเซียน 10 หน้า', assignedOffset:-6, dueOffset:0, dueTime:'09:00', teacher:'ครูสมศรี บุญมา', taskType:'กลุ่ม', groupMembers:'อนันดา ชัยพร, ปาริฉัตร ใสสะอาด', priority:'ปานกลาง', status:'เสร็จแล้ว' },
+      { subject:'คอมพิวเตอร์', description:'เขียนโค้ด HTML และ CSS สร้างเว็บไซต์ส่วนตัวอย่างง่าย', assignedOffset:-10, dueOffset:7, dueTime:'16:00', teacher:'ครูอนันต์ ชัยวัฒน์', taskType:'เดี่ยว', groupMembers:'', priority:'ต่ำ', status:'เสร็จแล้ว' },
+      { subject:'ศิลปะ', description:'วาดภาพระบายสีน้ำ หัวข้อธรรมชาติรอบตัว ขนาด A3', assignedOffset:-1, dueOffset:0, dueTime:'23:00', teacher:'ครูปราณี ศิลปิน', taskType:'เดี่ยว', groupMembers:'', priority:'สูง', status:'ยังไม่เริ่ม' }
     ];
     return raw.map(function(r, idx){
       return {
@@ -783,6 +806,8 @@
         dueDate: addDays(today, r.dueOffset),
         dueTime: r.dueTime,
         teacher: r.teacher,
+        taskType: r.taskType,
+        groupMembers: r.groupMembers,
         priority: r.priority,
         status: r.status,
         createdAt: base + idx * 1000
@@ -961,17 +986,30 @@
     var pClass = priorityToClass(task.priority);
     var teacherHtml = task.teacher ? '<span><i data-lucide="user"></i>' + escapeHtml(task.teacher) + '</span>' : '';
     var assignedHtml = task.assignedDate ? '<span><i data-lucide="calendar"></i>มอบหมาย ' + escapeHtml(formatThaiDate(task.assignedDate)) + '</span>' : '';
+    var isGroup = task.taskType === 'กลุ่ม';
+    var typeBadge = '<span class="badge badge-group"><i data-lucide="' + (isGroup ? 'users' : 'user') + '"></i>' + (isGroup ? 'งานกลุ่ม' : 'งานเดี่ยว') + '</span>';
+    var membersHtml = '';
+    if(isGroup && task.groupMembers){
+      var members = task.groupMembers.split(',').map(function(m){ return m.trim(); }).filter(Boolean);
+      if(members.length){
+        membersHtml = '<div class="member-chips">' + members.map(function(m){
+          return '<span class="member-chip"><i data-lucide="user"></i>' + escapeHtml(m) + '</span>';
+        }).join('') + '</div>';
+      }
+    }
 
     return '' +
     '<div class="glass-card task-card" data-id="' + task.id + '">' +
       '<div class="task-card-top">' +
         '<div class="task-subject"><span class="subject-dot ' + pClass + '"></span><span class="task-subject-name">' + escapeHtml(task.subject) + '</span></div>' +
         '<div class="task-badges">' +
+          typeBadge +
           '<span class="badge badge-' + pClass + '">' + escapeHtml(task.priority) + '</span>' +
           '<span class="badge badge-' + remaining.cls + '">' + remaining.text + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="task-desc">' + escapeHtml(task.description) + '</div>' +
+      membersHtml +
       '<div class="task-meta">' +
         assignedHtml +
         '<span><i data-lucide="calendar-clock"></i>กำหนดส่ง ' + escapeHtml(formatThaiDate(task.dueDate)) + (task.dueTime ? ' เวลา ' + escapeHtml(task.dueTime) + ' น.' : '') + '</span>' +
@@ -1086,6 +1124,8 @@
     document.getElementById('edit-task-id').value = '';
     document.getElementById('f-priority').value = 'ปานกลาง';
     document.getElementById('f-status').value = 'ยังไม่เริ่ม';
+    document.getElementById('f-taskType').value = 'เดี่ยว';
+    document.getElementById('group-members-field').classList.add('hidden');
     editingId = null;
     var submitBtn = document.getElementById('submit-btn');
     submitBtn.innerHTML = '<i data-lucide="save"></i>บันทึกงาน';
@@ -1103,6 +1143,9 @@
     document.getElementById('f-dueDate').value = task.dueDate || '';
     document.getElementById('f-dueTime').value = task.dueTime || '';
     document.getElementById('f-teacher').value = task.teacher || '';
+    document.getElementById('f-taskType').value = task.taskType || 'เดี่ยว';
+    document.getElementById('f-groupMembers').value = task.groupMembers || '';
+    document.getElementById('group-members-field').classList.toggle('hidden', (task.taskType || 'เดี่ยว') !== 'กลุ่ม');
     document.getElementById('f-priority').value = task.priority || 'ปานกลาง';
     document.getElementById('f-status').value = task.status || 'ยังไม่เริ่ม';
     document.getElementById('submit-btn').innerHTML = '<i data-lucide="save"></i>บันทึกการแก้ไข';
@@ -1111,14 +1154,25 @@
 
   function setupForm(){
     var form = document.getElementById('task-form');
+
+    document.getElementById('f-taskType').addEventListener('change', function(e){
+      document.getElementById('group-members-field').classList.toggle('hidden', e.target.value !== 'กลุ่ม');
+    });
+
     form.addEventListener('submit', function(e){
       e.preventDefault();
       var subject = document.getElementById('f-subject').value.trim();
       var description = document.getElementById('f-description').value.trim();
       var dueDate = document.getElementById('f-dueDate').value;
+      var taskType = document.getElementById('f-taskType').value;
+      var groupMembers = document.getElementById('f-groupMembers').value.trim();
 
       if(!subject || !description || !dueDate){
         showToast('กรุณากรอกวิชา รายละเอียด และวันกำหนดส่งให้ครบถ้วน', 'error');
+        return;
+      }
+      if(taskType === 'กลุ่ม' && !groupMembers){
+        showToast('กรุณากรอกรายชื่อสมาชิกในกลุ่มอย่างน้อย 1 คน', 'error');
         return;
       }
 
@@ -1129,6 +1183,8 @@
         dueDate: dueDate,
         dueTime: document.getElementById('f-dueTime').value || '23:59',
         teacher: document.getElementById('f-teacher').value.trim(),
+        taskType: taskType,
+        groupMembers: taskType === 'กลุ่ม' ? groupMembers : '',
         priority: document.getElementById('f-priority').value,
         status: document.getElementById('f-status').value
       };
